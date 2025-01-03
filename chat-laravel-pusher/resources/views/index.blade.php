@@ -45,5 +45,26 @@
                     $(document).scrollTop($(document).height());
                 });
         });
+
+        // Broadcast mensagens
+        $("form").submit(function (event) {
+            event.preventDefault();
+
+            $.ajax({
+                url: "/broadcast",
+                method: "POST",
+                headers: {
+                    'X-Socket-Id': pusher.connection.socket_id
+                },
+                data: {
+                    _token: '{{csrf_token()}}',
+                    message: $("form #message").val(),
+                }
+            }).done(function (res) {
+                $(".messages > .message").last().after(res);
+                $("form #message").val('');
+                $(document).scrollTop($(document).height());
+            });
+        });
     </script>
 </html>
