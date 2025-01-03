@@ -29,4 +29,21 @@
             </div>
         </div>
     </body>
+
+    <script>
+        const pusher = new Pusher('{{config('broadcasting.connections.pusher.key')}}', {cluster: 'eu'});
+        const channel = pusher.subscribe('public');
+
+        // Receber mensagens
+        channel.bind('chat', function (data) {
+            $post("/receive", {
+                _token: '{{csrf_token()}}',
+                message: data.message,
+            })
+                .done(function (res) {
+                    $(".messages > .message").last().after(res);
+                    $(document).scrollTop($(document).height());
+                });
+        });
+    </script>
 </html>
