@@ -4,8 +4,8 @@
         <meta charset="utf-8">
         <title>Chat-Laravel</title>
 
-        <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+        <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
 
         <link rel="stylesheet" href="/style.css">
     </head>
@@ -36,15 +36,20 @@
 
         // Receber mensagens
         channel.bind('chat', function (data) {
-            $post("/receive", {
-                _token: '{{csrf_token()}}',
-                message: data.message,
-            })
-                .done(function (res) {
-                    $(".messages > .message").last().after(res);
-                    $(document).scrollTop($(document).height());
-                });
+            console.log("Mensagem recebida:", data.message);
+
+            // Adiciona a mensagem recebida na interface
+            $(".messages").append(`
+                <div class="left message">
+                    <img src="https://assets.adlin.app/images/rossedlin/03/rossedlin-03-100.jpg" alt="Avatar">
+                    <p>${data.message}</p>
+                </div>
+            `);
+
+            // Rolagem automática para o fim da conversa
+            $(document).scrollTop($(document).height());
         });
+
 
         // Broadcast mensagens
         $("form").submit(function (event) {
