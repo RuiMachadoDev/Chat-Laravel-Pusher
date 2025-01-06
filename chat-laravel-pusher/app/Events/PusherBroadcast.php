@@ -12,26 +12,46 @@ use Illuminate\Queue\SerializesModels;
 
 class PusherBroadcast implements ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable, SerializesModels;
+
+    // Declaração da propriedade `message`
+    public $message;
+    public $socket_id;
 
     /**
-     * Create a new event instance.
+     * Construtor para inicializar a mensagem.
+     *
+     * @param string $message
      */
-    public function __construct(string $message)
+    public function __construct(string $message, ?string $socket_id)
     {
-        $this -> message = $message;
+        $this->message = $message; // Inicializa a propriedade
+        $this->socket_id = $socket_id;
+        \Log::info('Evento disparado:', ['message' => $message]);
     }
 
     /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
+     * Define os canais nos quais o evento será transmitido.
      */
     public function broadcastOn(): array
     {
         return [new Channel('public')];
     }
 
+    /**
+     * Adiciona dados adicionais ao evento.
+     */
+    public function broadcastWith(): array
+    {
+        return [
+            'message' => $this->message, // Garante que a mensagem será enviada no payload
+            'socket_id' => $this->socket_id,
+        ];
+    }
+
+    /**
+     * Define o nome do evento no canal.
+     */
     public function broadcastAs(): string
     {
         return 'chat';

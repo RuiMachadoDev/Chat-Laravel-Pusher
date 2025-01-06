@@ -15,9 +15,26 @@ class PusherController extends Controller
 
     public function broadcast(Request $request)
     {
-        broadcast(new PusherBroadcast($request->get('message')))->toOthers();
+        $message = $request->input('message');
+        $socket_id = $request->header('X-Socket-Id'); // Captura o socket_id do cabeçalho
 
-        return view('broadcast', ['message' => $request->get('message')]);
+        if (!$message) {
+            \Log::error('Mensagem vazia recebida.');
+            return response()->json(['error' => 'Message is empty'], 400);
+        }
+
+        \Log::info('Broadcasting mensagem:', [
+            'message' => $message,
+            'socket_id' => $socket_id,
+        ]);
+
+        // Passa o socket_id para o evento
+        broadcast(new PusherBroadcast($message, $socket_id))->toOthers();
+
+        return response()->json([
+            'status' => 'Message broadcasted',
+            'message' => $message,
+        ]);
     }
 
     public function receive(Request $request)

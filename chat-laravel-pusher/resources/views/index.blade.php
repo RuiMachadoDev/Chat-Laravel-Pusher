@@ -31,45 +31,71 @@
     </body>
 
     <script>
-        const pusher = new Pusher('{{config('broadcasting.connections.pusher.key')}}', {cluster: 'eu'});
-        const channel = pusher.subscribe('public');
-
-        // Receber mensagens
-        channel.bind('chat', function (data) {
-            console.log("Mensagem recebida:", data.message);
-
-            // Adiciona a mensagem recebida na interface
-            $(".messages").append(`
-                <div class="left message">
-                    <img src="https://assets.adlin.app/images/rossedlin/03/rossedlin-03-100.jpg" alt="Avatar">
-                    <p>${data.message}</p>
-                </div>
-            `);
-
-            // Rolagem automática para o fim da conversa
-            $(document).scrollTop($(document).height());
+        // Inicialização do Pusher
+        const pusher = new Pusher('{{ config('broadcasting.connections.pusher.key') }}', {
+            cluster: 'eu',
+            forceTLS: true,
         });
 
+        // Assinar o canal público
+        const channel = pusher.subscribe('public');
 
-        // Broadcast mensagens
+        // Enviar mensagem
         $("form").submit(function (event) {
             event.preventDefault();
 
+            const message = $("form #message").val();
+
+            if (!message) {
+                alert("Mensagem não pode estar vazia!");
+                return;
+            }
+
+            // Adiciona a mensagem localmente (lado direito)
+            $(".messages").append(`
+                <div class="right message">
+                    <p>${message}</p>
+                    <img src="https://via.placeholder.com/100" alt="Avatar">
+                </div>
+            `);
+
+            // Envia a mensagem para o backend
             $.ajax({
                 url: "/broadcast",
                 method: "POST",
                 headers: {
-                    'X-Socket-Id': pusher.connection.socket_id
+                    'X-Socket-Id': pusher.connection.socket_id,
                 },
                 data: {
-                    _token: '{{csrf_token()}}',
-                    message: $("form #message").val(),
+                    _token: '{{ csrf_token() }}',
+                    message: message,
                 }
-            }).done(function (res) {
-                $(".messages > .message").last().after(res);
-                $("form #message").val('');
-                $(document).scrollTop($(document).height());
+            }).fail(function (err) {
+                console.error("Erro ao enviar mensagem:", err.responseText);
             });
         });
+
+        // Receber mensagens via broadcast
+        channel.bind('chat', function (data) {
+            console.log("Mensagem recebida no broadcast:", data);
+            console.log("Socket ID local:", pusher.connection.socket_id);
+
+            // Ignora mensagens enviadas pelo próprio remetente
+            if (data.socket_id === pusher.connection.socket_id) {
+                console.log("Mensagem ignorada (do próprio remetente)");
+                return;
+            }
+
+            // Adiciona mensagens recebidas no lado esquerdo
+            $(".messages").append(`
+                <div class="left message">
+                    <img src="https://via.placeholder.com/100" alt="Avatar">
+                    <p>${data.message}</p>
+                </div>
+            `);
+
+            $(document).scrollTop($(document).height());
+        });
+
     </script>
 </html>
